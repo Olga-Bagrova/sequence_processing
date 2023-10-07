@@ -94,3 +94,18 @@ def is_seq_one_letter_protein(seq: str)->bool:
     """
     seqset = set(seq.upper())
     return (seqset <= ONE_LETTER_ENTRY)
+
+
+def count_length(seq: str)->int:
+    """
+    Count the length of the protein sequence
+    arguments:
+        - seq (str): sequence for length counting
+    return:
+        - int: length of protein sequence  
+    """
+    if is_seq_one_letter_protein(seq):
+        return len(seq)
+    else:
+        return int(len(seq)/3)
+
