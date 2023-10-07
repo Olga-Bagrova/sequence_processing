@@ -185,3 +185,26 @@ def aa_property (seq: str)->str:
     for aa in seq:
         property_string = property_string + AA_PROPERTY[aa]
     return property_string  
+
+
+def coiled_coil_find(seq: str)->list:
+    """
+    Find for the positions of the colied coil motif
+    Coiled coils usually contain a repeating hxxhcxc pattern of hydrophobic (h) and charged (c) amino acid residues -  'hxxhcxc'
+    arguments:
+        - seq (str): sequence for coiled coil searching
+    return:
+        - list: list of positions with found coiled coil
+    """
+    finds = []
+    pattern = 'hxxhcxc'
+    seq = seq.lower()
+    if is_seq_three_letter_protein(seq):
+        seq = rename_another_letter_entry(seq)
+    property_string = aa_property(seq)
+    for pos in range (len(property_string)-len(pattern)+1):
+        if (property_string[pos] == 'h') and (property_string[pos+3] == 'h') and ((property_string[pos+4] == 'p') or (property_string[pos+4] == 'n')) and ((property_string[pos+6] == 'p') or (property_string[pos+6] == 'n')):
+            finds.append(pos)
+    if len(finds) == 0:
+        finds = None
+    return finds
