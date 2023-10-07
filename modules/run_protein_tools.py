@@ -109,3 +109,29 @@ def count_length(seq: str)->int:
     else:
         return int(len(seq)/3)
 
+
+def count_percentage(seq: str)->dict:
+    """
+    Count percentage of each amino acid in sequence
+    arguments:
+        - seq (str): sequence for counting
+    return:
+        - dict: dictionary with counted percentage    
+    """
+    l = count_length(seq)
+    percentages = {}
+    if is_seq_one_letter_protein(seq):
+        step = 1
+        #print('step=', step)
+    else:
+        step = 3
+        #print('step=', step)
+    for i in range(0, len(seq), step):
+        aa = seq[i:i+step]
+        if aa not in percentages:
+            percentages[aa] = 1
+        else:
+            percentages[aa] += 1
+    percentages.update((key, round(value/l*100, 2)) for key, value in percentages.items())
+    percentages={key: value for key, value in sorted(percentages.items(), key=lambda item: item[1], reverse=True)}
+    return percentages
