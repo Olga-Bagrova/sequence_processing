@@ -29,3 +29,21 @@ def is_length_enough(seq: str, length_bounds: tuple)->bool:
         return False
 
 
+def is_quality_enough(quality_string: str, quality_threshold: int)->bool:
+    """
+    Check whether the quality of the sequence satisfies the boundaries
+    arguments:
+        - seq (str): sequence for checking
+        - quality_threshold (int): lower border for quality of sequence
+    return:
+        - bool: True or False depending on the sufficiency of the quality of sequence
+    """
+    quality = list(quality_string)
+    q_score = []
+    for symbol in quality:
+        q_score.append(ord(symbol)-33)
+    average_quality = sum(q_score) / len(q_score)
+    if average_quality >= quality_threshold:
+        return True
+    else:
+        return False
