@@ -169,3 +169,19 @@ def transform_to_DNA_code(seq):
     if is_seq_three_letter_protein(seq):
         seq = rename_another_letter_entry(seq)
     return ''.join([RETRANSLATE[aa] for aa in seq])
+
+
+def aa_property (seq: str)->str:
+    """
+    Print properties for each amino acids in string
+    arguments:
+        - seq (str): sequence for property-transforming
+    return:
+        - str: sequence of properties: P or p - positive side chain (R, H, K), N or n - negative (D, E), L or l - polar (S, T, N, Q), S or s - special (C, G, P), H or h - hydrophobic (A, V, I, L, M, F, Y, W). 
+    """
+    if is_seq_three_letter_protein(seq):
+        seq = rename_another_letter_entry(seq)
+    property_string = ''
+    for aa in seq:
+        property_string = property_string + AA_PROPERTY[aa]
+    return property_string  
