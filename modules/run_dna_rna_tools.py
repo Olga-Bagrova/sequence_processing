@@ -83,3 +83,28 @@ def reverse(seq: str)->str:
     return seq[::-1]
 
 
+def complement(seq: str)->str:
+    """
+    Return the complemetary DNA or RNA sequence
+    arguments:
+        - seq (str): DNA or RNA sequence for transcription
+    return:
+        - str: complemetary DNA or RNA sequence
+    """
+    res = ''
+    if is_rna(seq):
+        res = ''.join([COMPLEMETATION_RNA[nucleotide] for nucleotide in seq])
+    else:
+        res = ''.join([COMPLEMETATION_DNA[nucleotide] for nucleotide in seq])
+    return res
+
+
+def reverse_complement(seq: str)->str:
+    """
+    Return the reversed complemetary DNA or RNA sequence
+    arguments:
+        - seq (str): DNA or RNA sequence for transcription and reversion
+    return:
+        - str: reversed complemetary DNA or RNA sequence
+        """
+    return reverse(complement(seq))
