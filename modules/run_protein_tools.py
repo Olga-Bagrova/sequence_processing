@@ -156,3 +156,16 @@ def rename_another_letter_entry (seq: str)->str:
         aa = seq[i:i+step]
         renamed_seq = renamed_seq + to_entry[aa]
     return renamed_seq
+
+
+def transform_to_DNA_code(seq):
+    """
+    Transforming of an amino acid sequence/protein to DNA sequence
+    arguments:
+        - seqs (str): amino acid sequence of protein
+    return:
+        - str: sequence of protein in the DNA sequence form  
+    """
+    if is_seq_three_letter_protein(seq):
+        seq = rename_another_letter_entry(seq)
+    return ''.join([RETRANSLATE[aa] for aa in seq])
