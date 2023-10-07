@@ -70,3 +70,27 @@ AA_PROPERTY = {
     'g':'s','p':'s','a':'h','v':'h','i':'h',
     'l':'h','m':'h','f':'h','y':'h','w':'h'
 }
+
+
+def is_seq_three_letter_protein(seq: str)->bool:
+    """
+    Check whether the protein sequence is three-letter entry
+    arguments:
+        - seq (str): sequence for checking
+    return:
+        - bool: True or False depending on whether protein sequence is three-letter entry
+    """
+    seqset = {seq[i:i+3]  for i in range(0, len(seq), 3)}
+    return (seqset <= THREE_LETTER_ENTRY)
+    
+
+def is_seq_one_letter_protein(seq: str)->bool:
+    """
+    Check whether the protein sequence is one-letter entry
+    arguments:
+        - seq (str): sequence for checking
+    return:
+        - bool: True or False depending on whether protein sequence is one-letter entry
+    """
+    seqset = set(seq.upper())
+    return (seqset <= ONE_LETTER_ENTRY)
