@@ -71,3 +71,15 @@ def transcribe(seq: str)->str:
         raise ValueError('Only DNA-sequence are able to be transcribed, please entry DNA-sequence')
     return res
 
+
+def reverse(seq: str)->str:
+    """
+    Reverse the DNA or RNA sequence
+    arguments:
+        - seq (str): DNA or RNA sequence for transcription
+    return:
+        - str: reversed sequence
+    """
+    return seq[::-1]
+
+
