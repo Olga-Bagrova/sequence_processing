@@ -30,3 +30,27 @@ COMPLEMETATION_DNA = {
     'g': 'c',
     'c': 'g'
 }
+
+
+def is_dna(seq: str)->bool:
+    """
+    Check whether the sequence is DNA 
+    arguments:
+        - seq (str): sequence for checking
+    return:
+        - bool: True or False depending on whether the sequence is DNA
+    """
+    seqset = set(seq.upper())
+    return (seqset <= DNA)
+
+
+def is_rna(seq: str)->bool:
+    """
+    Check whether the sequence is RNA 
+    arguments:
+        - seq (str): sequence for checking
+    return:
+        - bool: True or False depending on whether the sequence is RNA
+    """
+    seqset = set(seq.upper())
+    return (seqset <= RNA)
