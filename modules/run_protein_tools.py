@@ -135,3 +135,24 @@ def count_percentage(seq: str)->dict:
     percentages.update((key, round(value/l*100, 2)) for key, value in percentages.items())
     percentages={key: value for key, value in sorted(percentages.items(), key=lambda item: item[1], reverse=True)}
     return percentages
+
+
+def rename_another_letter_entry (seq: str)->str:
+    """
+    Transform to three-letter amino acids entry if initial is one-letter, and to one-letter if initial is three-letter
+    arguments:
+        - seqs (str): sequence for transforming to one(three)-letter entire
+    return:
+        - str: transformed sequence
+    """
+    renamed_seq = ''
+    if is_seq_one_letter_protein(seq):
+        step = 1
+        to_entry = TO_THREE_LETTER_DICT
+    else:
+        step = 3
+        to_entry = TO_ONE_LETTER_DICT
+    for i in range(0, len(seq), step):
+        aa = seq[i:i+step]
+        renamed_seq = renamed_seq + to_entry[aa]
+    return renamed_seq
