@@ -206,25 +206,3 @@ def coiled_coil_find(seq: str)->list:
     if len(finds) == 0:
         finds = None
     return finds
-
-
-def run_protein_tools(*args)->list:
-    *seqs, procedure = args
-    res = []
-    functions = {
-        'length': count_length,
-        'percentage': count_percentage,
-        'rename': rename_another_letter_entry,
-        'to_dna': transform_to_DNA_code,
-        'property': aa_property,
-        'coiled_coil': coiled_coil_find
-        }
-    for seq in seqs:
-        if is_seq_one_letter_protein(seq) or is_seq_three_letter_protein(seq):
-            after = functions[procedure](seq)
-            res.append(after)
-        else:
-            raise ValueError('Incorrect input sequence(s), please try again')
-    if len(res) == 1:
-        res = res[0]
-    return res
