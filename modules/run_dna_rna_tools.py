@@ -41,7 +41,7 @@ def is_dna(seq: str)->bool:
         - bool: True or False depending on whether the sequence is DNA
     """
     seqset = set(seq.upper())
-    return (seqset <= DNA)
+    return seqset <= DNA
 
 
 def is_rna(seq: str)->bool:
@@ -53,7 +53,7 @@ def is_rna(seq: str)->bool:
         - bool: True or False depending on whether the sequence is RNA
     """
     seqset = set(seq.upper())
-    return (seqset <= RNA)
+    return seqset <= RNA
 
 
 def transcribe(seq: str)->str:

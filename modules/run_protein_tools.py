@@ -69,7 +69,7 @@ AA_PROPERTY = {
     's':'l','t':'l','n':'l','q':'l','c':'s',
     'g':'s','p':'s','a':'h','v':'h','i':'h',
     'l':'h','m':'h','f':'h','y':'h','w':'h'
-}
+}#amino acids properties: P or p - positive side chain (R, H, K), N or n - negative (D, E), L or l - polar (S, T, N, Q), S or s - special (C, G, P), H or h - hydrophobic (A, V, I, L, M, F, Y, W).
 
 
 def is_seq_three_letter_protein(seq: str)->bool:
@@ -122,10 +122,8 @@ def count_percentage(seq: str)->dict:
     percentages = {}
     if is_seq_one_letter_protein(seq):
         step = 1
-        #print('step=', step)
     else:
         step = 3
-        #print('step=', step)
     for i in range(0, len(seq), step):
         aa = seq[i:i+step]
         if aa not in percentages:
@@ -173,7 +171,7 @@ def transform_to_DNA_code(seq):
 
 def aa_property (seq: str)->str:
     """
-    Print properties for each amino acids in string
+    Return properties for each amino acids in string
     arguments:
         - seq (str): sequence for property-transforming
     return:
