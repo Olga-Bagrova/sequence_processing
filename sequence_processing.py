@@ -1,19 +1,45 @@
 import modules.filter_fastq
 import modules.run_dna_rna_tools
 import modules.run_protein_tools
+import os
 
 
-def filter_fastq(seqs: dict, gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
+def read_fastq(input_path)->dict:
+    """
+    Read data from fastq-file by the path and return a dictionary with sequences names as keys and lists of sequences and quality strings.
+    arguments:
+        - input_path (str): path to the fastq-file for reading
+    return:
+        - seqs (dict): fastq-sequences the key is the name of the sequence, the value is sequence and its quality
+    """
+    if not os.path.isfile(input_path):
+        raise ValueError('File is not exist. Please, check up and try again!')
+    seqs = dict()
+    with open(input_path) as file:
+        while True:
+            name = file.readline().rstrip()
+            if len(name) == 0:
+                break
+            sequence = file.readline().rstrip()
+            file.readline().rstrip()
+            quality_string = file.readline().rstrip()
+            seqs[name] = (sequence, quality_string)                
+    return seqs
+
+
+def filter_fastq(input_path: str, output_filename: str, gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
     """
     Filter fastq-sequences based on its gc-content, length and quality.
     arguments:
-        - seqs (dict): fastq-sequences for  (key (str) - name of the sequence, value (tuple) - sequence and its quality)
+        - input_path (str): path to the fastq-file for reading
+        - output_filename (str): path for saving file with result (filtered fastq)
         - gc_bounds (tuple): lower and upper borders for gc-content of sequence
         - length_bounds (tuple): lower and upper borders for length of sequence
         - quality_threshold (int): lower border for quality of sequence
     return:
         - dict: fastq-sequences with True or False depending on the sufficiency of the quality of sequence
     """
+    seqs = read_fastq(input_path)
     suitable_seqs = dict()
     if not isinstance(gc_bounds, tuple):
         gc_bounds = tuple((0, int(gc_bounds)))
