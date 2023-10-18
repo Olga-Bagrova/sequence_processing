@@ -6,14 +6,14 @@ import os
 
 def read_fastq(input_path)->dict:
     """
-    Read data from fastq-file by the path and return a dictionary with sequences names as keys and lists of sequences and quality strings.
+    Read data from fastq-file through the path and return a dictionary with sequences, where names are keys and values are lists of sequences and quality strings.
     arguments:
         - input_path (str): path to the fastq-file for reading
     return:
-        - seqs (dict): fastq-sequences the key is the name of the sequence, the value is sequence and its quality
+        - dict: fastq-sequences the key is the name of the sequence, the value is sequence and its quality
     """
     if not os.path.isfile(input_path):
-        raise ValueError('File is not exist. Please, check up and try again!')
+        raise ValueError('Input file is not exist. Please, check up and try again!')
     seqs = dict()
     with open(input_path) as file:
         while True:
@@ -27,7 +27,30 @@ def read_fastq(input_path)->dict:
     return seqs
 
 
-def filter_fastq(input_path: str, output_filename: str, gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
+def save_filtered_fastq(suitable_seqs: dict, output_filename: str):
+    """
+    Save filtered sequences in fastq-file.
+    arguments: 
+        - suitable_seqs (dict): filtered fastq-sequences
+        - output_filename (str): name of file for saving suitable_seqs
+    """
+    dir_name = 'fastq_filtrator_results'
+    if not output_filename[-6:] == '.fastq':
+        output_filename = output_filename + '.fastq'
+    if not os.path.isdir(dir_name):
+        os.mkdir(dir_name)
+    output_path = os.path.join(dir_name, output_filename)
+    mode_writing = 'w'
+    if os.path.isfile(output_path):
+        raise ValueError('File with such name is exist. Please, use another name for your output file.')
+    with open(output_path, mode = 'w') as file:
+        for names, value in suitable_seqs.items():
+            one_seq_info = names + '\n' + value[0]  + '\n+\n' + value[1] + '\n'
+            file.write(one_seq_info)
+    print('The result of fastq-filtering is saved in', output_path)
+
+
+def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
     """
     Filter fastq-sequences based on its gc-content, length and quality.
     arguments:
@@ -37,7 +60,7 @@ def filter_fastq(input_path: str, output_filename: str, gc_bounds: tuple = (0, 1
         - length_bounds (tuple): lower and upper borders for length of sequence
         - quality_threshold (int): lower border for quality of sequence
     return:
-        - dict: fastq-sequences with True or False depending on the sufficiency of the quality of sequence
+        - dict: filtered fastq-sequences
     """
     seqs = read_fastq(input_path)
     suitable_seqs = dict()
@@ -47,8 +70,12 @@ def filter_fastq(input_path: str, output_filename: str, gc_bounds: tuple = (0, 1
         length_bounds = tuple((0, int(length_bounds)))
     for key, value in seqs.items():
         if (modules.filter_fastq.is_gc_enough(value[0], gc_bounds)) and (modules.filter_fastq.is_length_enough(value[0], length_bounds)) and (modules.filter_fastq.is_quality_enough(value[1], quality_threshold)):
-            suitable_seqs[key] = value    
+            suitable_seqs[key] = value   
+    if output_filename == '':
+        output_filename = input_path
+    save_filtered_fastq(suitable_seqs, output_filename)
     return suitable_seqs
+
 
 
 def run_dna_rna_tools(*args)->list:
