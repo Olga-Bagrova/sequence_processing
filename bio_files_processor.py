@@ -34,7 +34,14 @@ def convert_multiline_fasta_to_oneline(input_fasta: str, output_fasta: str = '')
 convert_multiline_fasta_to_oneline('example_data/example_multiline_fasta.fasta.txt', 'uxotdput')
 
 
-def read_gbk_to_list(input_gbk):
+def read_gbk_to_list(input_gbk: str)->list:
+    """
+    Return list of information about genes from gbk-file
+    arguments:
+        - input_gbk (str): path to the gbk-file for reading
+    return:
+        - list: information from gbk-format in list type
+    """
     with open(input_gbk) as file:
         line = file.readline()
         while not line.startswith('FEATURES'):
@@ -68,10 +75,20 @@ def read_gbk_to_list(input_gbk):
                 line = file.readline()
             line = file.readline()
             genes.append(gene_info)
-    return(genes)
+    return genes
 
 
-def extract_genes(gbk_genes_info, inp_genes, n_before=1, n_after=1):
+def extract_genes(gbk_genes_info: list, inp_genes: list, n_before: int = 1, n_after: int = 1)->list:
+    """
+    Extract genes from gbk-list 
+    arguments:
+        - gbk_genes_info (list): information from gbk-format in type of list
+        - inp_genes (list): gene names, which are interested
+        - n_before (int): additional genes before the interesting one
+        - n_after (int): additional genes after the interesting one
+    return:
+        - list: extracted information from gbk-format about interesting and additional genes
+    """
     genes_to_file = []
     if not isinstance(inp_genes, list):
         genes = [inp_genes]
@@ -91,20 +108,37 @@ def extract_genes(gbk_genes_info, inp_genes, n_before=1, n_after=1):
     return genes_to_file
 
 
-def write_to_fasta(extracted_genes, output_fasta):
+def write_to_fasta(extracted_genes: list, output_fasta: str):
+    """
+    Write genes sequences in gbk-format to fasta-file
+    arguments:
+        - extracted_genes (list): information about genes in gbk-format in type of list
+        - output_fasta (str): name of fasta-file
+    """
     with open(output_fasta, mode = 'w') as file:
         for gene_info in extracted_genes:
+            name_string = '>'
             for info in gene_info:
-                if info.startswith('gene='):
-                    file.write('>'+info.split('gene=')[1]+'\n')
-                if info.startswith('translation='):
-                    file.write(info.split('translation=')[1]+'\n')
+                if not info.startswith('translation='):
+                    name_string = name_string + info + '|'
+                else:
+                    file.write(name_string[:-1]+'\n')
+                    file.write(info.split('translation="')[1]+'\n')
 
 
-def select_genes_from_gbk_to_fasta(input_gbk, genes, n_before=1, n_after=1, output_fasta = ''):
+def select_genes_from_gbk_to_fasta(input_gbk, genes, n_before = 1, n_after = 1, output_fasta = ''):
+    """
+    Extract the chosen genes from gbk-file and write them to fasta-file
+    arguments:
+        - input_gbk (str): path to the gbk-file for processing
+        - genes (list): genes names, which are interested
+        - n_before (int): additional genes before the interesting one
+        - n_after (int): additional genes after the interesting one
+        - output_fasta (str): name of fasta-file for saving the result
+    """
     gbk_genes_info = read_gbk_to_list(input_gbk)
     extracted_genes = extract_genes(gbk_genes_info, genes, n_before=1, n_after=1)
     if output_fasta == '':
-        output_fasta = 'out_' + output_fasta
+        output_fasta = 'out_' + input_gbk
     output_fasta += '.fasta'
     write_to_fasta(extracted_genes, output_fasta)
