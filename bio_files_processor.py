@@ -78,7 +78,6 @@ def extract_genes(gbk_genes_info, inp_genes, n_before=1, n_after=1):
     for gene in genes:
         gene = 'gene="' + gene + '"'
         matching = [gbk_genes_info.index(gene_info) for gene_info in gbk_genes_info if gene in gene_info]
-        print(matching)
     for matched_index in matching:
         if matched_index-n_before <0:
             start = 0
@@ -89,7 +88,23 @@ def extract_genes(gbk_genes_info, inp_genes, n_before=1, n_after=1):
             end = matched_index+n_after+1
         for i in range (start, end):
             genes_to_file.append(gbk_genes_info[i])
+    return genes_to_file
+
+
+def write_to_fasta(extracted_genes, output_fasta):
+    with open(output_fasta, mode = 'w') as file:
+        for gene_info in extracted_genes:
+            for info in gene_info:
+                if info.startswith('gene='):
+                    file.write('>'+info.split('gene=')[1]+'\n')
+                if info.startswith('translation='):
+                    file.write(info.split('translation=')[1]+'\n')
+
 
 def select_genes_from_gbk_to_fasta(input_gbk, genes, n_before=1, n_after=1, output_fasta = ''):
     gbk_genes_info = read_gbk_to_list(input_gbk)
     extracted_genes = extract_genes(gbk_genes_info, genes, n_before=1, n_after=1)
+    if output_fasta == '':
+        output_fasta = 'out_' + output_fasta
+    output_fasta += '.fasta'
+    write_to_fasta(extracted_genes, output_fasta)
