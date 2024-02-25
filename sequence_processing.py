@@ -1,55 +1,12 @@
-import modules.filter_fastq
-import modules.run_dna_rna_tools
-import modules.run_protein_tools
 import os
 
-
-def read_fastq(input_path)->dict:
-    """
-    Read data from fastq-file through the path and return a dictionary with sequences, where names are keys and values are lists of sequences and quality strings.
-    arguments:
-        - input_path (str): path to the fastq-file for reading
-    return:
-        - dict: fastq-sequences the key is the name of the sequence, the value is sequence and its quality
-    """
-    if not os.path.isfile(input_path):
-        raise ValueError('Input file is not exist. Please, check up and try again!')
-    seqs = dict()
-    with open(input_path) as file:
-        while True:
-            name = file.readline().rstrip()
-            if len(name) == 0:
-                break
-            sequence = file.readline().rstrip()
-            file.readline().rstrip()
-            quality_string = file.readline().rstrip()
-            seqs[name] = (sequence, quality_string)                
-    return seqs
+from Bio import SeqIO
+from Bio import SeqUtils
+from Bio import SeqRecord
+from abc import ABC, abstractmethod
 
 
-def save_filtered_fastq(suitable_seqs: dict, output_filename: str):
-    """
-    Save filtered sequences in fastq-file.
-    arguments: 
-        - suitable_seqs (dict): filtered fastq-sequences
-        - output_filename (str): name of file for saving suitable_seqs
-    """
-    dir_name = 'fastq_filtrator_results'
-    if not output_filename[-6:] == '.fastq':
-        output_filename = output_filename + '.fastq'
-    if not os.path.isdir(dir_name):
-        os.mkdir(dir_name)
-    output_path = os.path.join(dir_name, output_filename)
-    mode_writing = 'w'
-    if os.path.isfile(output_path):
-        raise ValueError('File with such name is exist. Please, use another name for your output file.')
-    with open(output_path, mode = 'w') as file:
-        for names, value in suitable_seqs.items():
-            one_seq_info = names + '\n' + value[0]  + '\n+\n' + value[1] + '\n'
-            file.write(one_seq_info)
-    print('The result of fastq-filtering is saved in', output_path)
-
-
+#-----------------4 обновленное---------------------------
 def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
     """
     Filter fastq-sequences based on its gc-content, length and quality.
@@ -60,73 +17,158 @@ def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = 
         - length_bounds (tuple): lower and upper borders for length of sequence
         - quality_threshold (int): lower border for quality of sequence
     return:
-        - dict: filtered fastq-sequences
+        - dict of SeqRecords: filtered fastq-sequences
     """
-    seqs = read_fastq(input_path)
-    suitable_seqs = dict()
+
+    
+    #seqs = SeqIO.parse(input_path, 'fastq')#seqs = read_fastq(input_path)
     if not isinstance(gc_bounds, tuple):
         gc_bounds = tuple((0, int(gc_bounds)))
     if not isinstance(length_bounds, tuple):
         length_bounds = tuple((0, int(length_bounds)))
-    for key, value in seqs.items():
-        if (modules.filter_fastq.is_gc_enough(value[0], gc_bounds)) and (modules.filter_fastq.is_length_enough(value[0], length_bounds)) and (modules.filter_fastq.is_quality_enough(value[1], quality_threshold)):
-            suitable_seqs[key] = value   
+
+    
+    suitable_seqs = list(
+        record
+        for record in SeqIO.parse(input_path, "fastq")
+        if ((gc_bounds[0] <= SeqUtils.gc_fraction(record.seq)*100 <= gc_bounds[1]) and 
+            (length_bounds[0] <= len(record) <= length_bounds[1]) and 
+            (sum(record.letter_annotations['phred_quality']) / len(record) >= quality_threshold))
+    )  
+
+    
     if output_filename == '':
-        output_filename = input_path
-    save_filtered_fastq(suitable_seqs, output_filename)
+        output_filename = 'good_quality.fastq'
+    dir_name = 'fastq_filtrator_results'
+    if not output_filename[-6:] == '.fastq':
+        output_filename = output_filename + '.fastq'
+    if not os.path.isdir(dir_name):
+        os.mkdir(dir_name)
+    output_path = os.path.join(dir_name, output_filename)
+    if os.path.isfile(output_path):
+        raise ValueError('File with such name is exist. Please, use another name for your output file.')
+    SeqIO.write(suitable_seqs, output_path, 'fastq')
+    #count = SeqIO.write(suitable_seqs, output_path, 'fastq')
+    #print(count)
+    print('The result of fastq-filtering is saved in', output_path)
     return suitable_seqs
 
 
 
-def run_dna_rna_tools(*args)->list:
-    """
-    Process DNA- and RNA-sequence(s)
-    arguments:
-        - args: sequence or sequences and operation for it or them
-    operations:
-        -'transcribe': transcribe the DNA-sequence(s)
-        -'reverse': reverse the sequence(s)
-        -'complement': return the complemetary sequence(s)
-        -'reverse_complement': return the reversed complemetary sequence(s)
-    return:
-        - list (or str): processed sequence(s)
-    """
-    *seqs, procedure = args
-    res = []
-    functions = {
-        'transcribe': modules.run_dna_rna_tools.transcribe,
-        'reverse': modules.run_dna_rna_tools.reverse,
-        'complement': modules.run_dna_rna_tools.complement,
-        'reverse_complement': modules.run_dna_rna_tools.reverse_complement
-        }
-    for seq in seqs:
-        if modules.run_dna_rna_tools.is_dna(seq) or modules.run_dna_rna_tools.is_rna(seq):
-            after = functions[procedure](seq)
-            res.append(after)
-        else:
-            raise ValueError('Incorrect input sequence(s), please try again')
-    if len(res) == 1:
-        res = res[0]
-    return res
+
+#-----------------5-----------------------
+
+class BiologicalSequence(ABC, str):
+    def __init__(self, seq: str):
+        self.seq = seq
+
+    @abstractmethod
+    def check_alphabet(self):
+        return set(self.seq).issubset(self.alphabet)
+        
+class NucleicAcidSequence(BiologicalSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq = seq)
+
+    def complement(self):
+        """
+        Return the complemetary DNA or RNA sequence
+        arguments:
+            - seq (str): DNA or RNA sequence for transcription
+        return:
+            - str: complemetary DNA or RNA sequence
+        """
+
+        complementary_seq = ''.join([self.comlementation[nucleotide] for nucleotide in self])
+        return type(self)(complementary_seq)
 
 
-def run_protein_tools(*args)->list:
-    *seqs, procedure = args
-    res = []
-    functions = {
-        'length': modules.run_protein_tools.count_length,
-        'percentage': modules.run_protein_tools.count_percentage,
-        'rename': modules.run_protein_tools.rename_another_letter_entry,
-        'to_dna': modules.run_protein_tools.transform_to_DNA_code,
-        'property': modules.run_protein_tools.aa_property,
-        'coiled_coil': modules.run_protein_tools.coiled_coil_find
+    def gc_content(self):
+        return 100*(self.count('G') + self.count('C')) / len(self)#len(seq)
+
+class DNASequence(NucleicAcidSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq = seq)
+        self.alphabet = {'A', 'T', 'G', 'C', 'a', 't', 'g', 'c'}
+        self.comlementation = {
+            'A': 'T',
+            'T': 'A',
+            'G': 'C',
+            'C': 'G',
+            'a': 't',
+            't': 'a',
+            'g': 'c',
+            'c': 'g'
         }
-    for seq in seqs:
-        if modules.run_protein_tools.is_seq_one_letter_protein(seq) or modules.run_protein_tools.is_seq_three_letter_protein(seq):
-            after = functions[procedure](seq)
-            res.append(after)
-        else:
-            raise ValueError('Incorrect input sequence(s), please try again')
-    if len(res) == 1:
-        res = res[0]
-    return res
+        self.transcription = {
+            'A': 'A',
+            'T': 'U',
+            'G': 'G',
+            'C': 'C',
+            'a': 'a',
+            't': 'u',
+            'g': 'g',
+            'c': 'c'
+        }
+        
+    def transcribe(self):
+        """
+        Transcribe the DNA-sequence
+        arguments:
+            - seq (str): DNA-sequence for transcription
+        return:
+            - str: transcribed DNA-sequence
+        """
+        transcribed_seq = ''.join([self.transcription[nucleotide] for nucleotide in self.seq])
+        return type(self)(transcribed_seq)
+
+class RNASequence(NucleicAcidSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq = seq)
+        self.alphabet = {'A', 'U', 'G', 'C', 'a', 'u', 'g', 'c'}
+        self.comlementation = {
+            'A': 'U',
+            'U': 'A',
+            'G': 'C',
+            'C': 'G',
+            'a': 'u',
+            'u': 'a',
+            'g': 'c',
+            'c': 'g'
+        }
+
+
+class AminoAcidSequence(BiologicalSequence):
+    def __init__(self, seq: str):
+        super().__init__(seq = seq)
+        self.alphabet = {
+            'A', 'R', 'N', 'D', 'V', 
+            'H', 'G', 'Q', 'E', 'I', 
+            'L', 'K', 'M', 'P', 'S', 
+            'Y', 'T', 'W', 'F', 'C', 
+            'a', 'r', 'n', 'd', 'v', 
+            'h', 'g', 'q', 'e', 'i', 
+            'l', 'k', 'm', 'p', 's', 
+            'y', 't', 'w', 'f', 'c'
+        }
+        
+    def count_percentage(self):
+        """
+        Count percentage of each amino acid in sequence
+        arguments:
+            - seq (str): sequence for counting
+        return:
+            - dict: dictionary with counted percentage    
+        """
+        l = len(self)
+        percentages = {}
+        for i in range(0, l):
+            aa = self[i:i+1]
+            if aa not in percentages:
+                percentages[aa] = 1
+            else:
+                percentages[aa] += 1
+        percentages.update((key, round(value / l * 100, 2)) for key, value in percentages.items())
+        percentages = {key: value for key, value in sorted(percentages.items(), key=lambda item: item[1], reverse=True)}
+        return percentages
+
