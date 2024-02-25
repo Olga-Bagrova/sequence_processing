@@ -6,28 +6,24 @@ from Bio import SeqRecord
 from abc import ABC, abstractmethod
 
 
-#-----------------4 обновленное---------------------------
-def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->dict:
+def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = (0, 100), length_bounds: tuple = (0, 2**32), quality_threshold: int = 0)->list:
     """
     Filter fastq-sequences based on its gc-content, length and quality.
     arguments:
         - input_path (str): path to the fastq-file for reading
         - output_filename (str): path for saving file with result (filtered fastq)
-        - gc_bounds (tuple): lower and upper borders for gc-content of sequence
+        - gc_bounds (tuple): lower and upper borders for gc-content of sequence in percent
         - length_bounds (tuple): lower and upper borders for length of sequence
         - quality_threshold (int): lower border for quality of sequence
     return:
-        - dict of SeqRecords: filtered fastq-sequences
+        - list of SeqRecords: filtered fastq-sequences
     """
-
     
-    #seqs = SeqIO.parse(input_path, 'fastq')#seqs = read_fastq(input_path)
     if not isinstance(gc_bounds, tuple):
         gc_bounds = tuple((0, int(gc_bounds)))
     if not isinstance(length_bounds, tuple):
         length_bounds = tuple((0, int(length_bounds)))
 
-    
     suitable_seqs = list(
         record
         for record in SeqIO.parse(input_path, "fastq")
@@ -36,7 +32,6 @@ def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = 
             (sum(record.letter_annotations['phred_quality']) / len(record) >= quality_threshold))
     )  
 
-    
     if output_filename == '':
         output_filename = 'good_quality.fastq'
     dir_name = 'fastq_filtrator_results'
@@ -48,47 +43,70 @@ def filter_fastq(input_path: str, output_filename: str = '', gc_bounds: tuple = 
     if os.path.isfile(output_path):
         raise ValueError('File with such name is exist. Please, use another name for your output file.')
     SeqIO.write(suitable_seqs, output_path, 'fastq')
-    #count = SeqIO.write(suitable_seqs, output_path, 'fastq')
-    #print(count)
     print('The result of fastq-filtering is saved in', output_path)
+    
     return suitable_seqs
 
 
-
-
-#-----------------5-----------------------
-
 class BiologicalSequence(ABC, str):
+    """
+    Abstract class for NucleicAcidSequence and AminoAcidSequence. 
+    attributes:
+        - seq (str): sequence
+    methods:
+        - check_alphabet: check whether the seq matches the right biological alphabet
+    """
+
     def __init__(self, seq: str):
         self.seq = seq
 
     @abstractmethod
-    def check_alphabet(self):
-        return set(self.seq).issubset(self.alphabet)
+    def check_alphabet(self)->bool:
+        """Check whether the seq matches the right biological alphabet."""
         
+        return set(self.seq).issubset(self.alphabet)
+
+
 class NucleicAcidSequence(BiologicalSequence):
+    """
+    Class for DNASequence and RNASequence.
+    methods:
+        - complement: return the complemetary DNA or RNA sequence
+    """
+    
     def __init__(self, seq: str):
         super().__init__(seq = seq)
 
     def complement(self):
-        """
-        Return the complemetary DNA or RNA sequence
-        arguments:
-            - seq (str): DNA or RNA sequence for transcription
-        return:
-            - str: complemetary DNA or RNA sequence
-        """
+        """Return the complemetary DNA or RNA sequence."""
 
-        complementary_seq = ''.join([self.comlementation[nucleotide] for nucleotide in self])
+        try:
+            complementary_seq = ''.join([self.comlementation[nucleotide] for nucleotide in self])
+        except AttributeError:
+            raise NotImplementedError('A DNASequence or RNASequence type object is required.')
+        
         return type(self)(complementary_seq)
 
-
     def gc_content(self):
-        return 100*(self.count('G') + self.count('C')) / len(self)#len(seq)
+        """Return the gc-content of in sequence in percent."""
+        
+        return 100*(self.count('G') + self.count('C')) / len(self)
+
 
 class DNASequence(NucleicAcidSequence):
+    """
+    Class for DNA sequences.
+    attributes:
+        - alphabet (str): allowed characters in the sequence
+        - comlementation (dict): dictionary with complementarity rules
+        - transcription (dict): dictionary with transcription rules
+    methods:
+        - transcribe: return the transcribed DNA
+    """
+    
     def __init__(self, seq: str):
         super().__init__(seq = seq)
+        
         self.alphabet = {'A', 'T', 'G', 'C', 'a', 't', 'g', 'c'}
         self.comlementation = {
             'A': 'T',
@@ -112,19 +130,23 @@ class DNASequence(NucleicAcidSequence):
         }
         
     def transcribe(self):
-        """
-        Transcribe the DNA-sequence
-        arguments:
-            - seq (str): DNA-sequence for transcription
-        return:
-            - str: transcribed DNA-sequence
-        """
+        """Return transcribed DNA-sequence."""
+        
         transcribed_seq = ''.join([self.transcription[nucleotide] for nucleotide in self.seq])
         return type(self)(transcribed_seq)
 
+
 class RNASequence(NucleicAcidSequence):
+    """
+    Class for RNA sequences.
+    attributes:
+        - alphabet (str): allowed characters in the sequence
+        - comlementation (dict): dictionary with complementarity rules
+    """
+    
     def __init__(self, seq: str):
         super().__init__(seq = seq)
+        
         self.alphabet = {'A', 'U', 'G', 'C', 'a', 'u', 'g', 'c'}
         self.comlementation = {
             'A': 'U',
@@ -139,8 +161,17 @@ class RNASequence(NucleicAcidSequence):
 
 
 class AminoAcidSequence(BiologicalSequence):
+    """
+    Class for protein (amino acids) sequences.
+    attributes:
+        - alphabet (str): allowed characters in the sequence
+    methods:
+        - count_percentage: return percentage of each amino acid in sequence
+    """
+    
     def __init__(self, seq: str):
         super().__init__(seq = seq)
+        
         self.alphabet = {
             'A', 'R', 'N', 'D', 'V', 
             'H', 'G', 'Q', 'E', 'I', 
@@ -152,14 +183,9 @@ class AminoAcidSequence(BiologicalSequence):
             'y', 't', 'w', 'f', 'c'
         }
         
-    def count_percentage(self):
-        """
-        Count percentage of each amino acid in sequence
-        arguments:
-            - seq (str): sequence for counting
-        return:
-            - dict: dictionary with counted percentage    
-        """
+    def count_percentage(self)->dict:
+        """Return dictionary with counted percentage of each amino acid in sequence."""
+        
         l = len(self)
         percentages = {}
         for i in range(0, l):
